@@ -6,6 +6,8 @@
 
 ### 🎥 데모
 
+<img src="demo.png"/>
+
 ### ⚙️ 요구사항
 
 > **Docker가 설치되어 있어야 합니다. <br/> Node.js(v18+) 가 설치되어 있어야 합니다.**
@@ -63,4 +65,4 @@ yarn start
 
 ### 🗂️ 프로젝트 구조
 
-<img src="./readme.png" width="80%"/>
+<img src="./README.png" width="80%"/>
