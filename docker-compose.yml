@@ -1,0 +1,13 @@
+version: "4.1"
+
+services:
+    chroma:
+        image: chromadb/chroma:latest
+        ports:
+            - "8000:8000"
+        networks:
+            - default
+
+networks:
+    default:
+        driver: bridge
