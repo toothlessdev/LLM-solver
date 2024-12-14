@@ -1,12 +1,10 @@
 import dotenv from "dotenv";
 import readline from "readline";
 
-import { PipeLine } from "./pipe/index.js";
-import { ExtractPDFMiddleware } from "./middlewares/ExtractPDFMiddleware.js";
-import { RetrieveAssetsMiddleware } from "./middlewares/RetrieveAssetsMiddleware.js";
-import { RetrieveContextMiddleware } from "./middlewares/RetrieveContextMiddleware.js";
 import { Logger } from "./log/Logger.js";
 import { AnswerGenerator } from "./modules/AnswerGenerator.js";
+import { Container } from "typedi";
+import loaders from "./loaders/index.js";
 
 dotenv.config();
 
@@ -14,16 +12,6 @@ const readLine = readline.createInterface({
     input: process.stdin,
     output: process.stdout,
 });
-
-async function pipelineLoader() {
-    const pipeline = new PipeLine();
-
-    pipeline.use(new RetrieveAssetsMiddleware());
-    pipeline.use(new ExtractPDFMiddleware());
-    pipeline.use(new RetrieveContextMiddleware());
-
-    return pipeline;
-}
 
 async function readQuestions(callback) {
     readLine.question("> 질문을 입력하세요 : ", async (question) => {
@@ -37,8 +25,9 @@ async function readQuestions(callback) {
 }
 
 async function main() {
+    await loaders();
     const context = {};
-    const pipeline = await pipelineLoader();
+    const pipeline = Container.get("pipeline");
     await pipeline.execute(context);
 
     Logger.log("Main", "Pipeline executed");
