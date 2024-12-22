@@ -1,8 +1,8 @@
-import { PipeLine } from "../pipe/index.js";
-import { Container } from "typedi";
+import { PipeLine } from '../pipeline/index.js';
+import { Container } from 'typedi';
 export default async () => {
-    const middlewares = Container.get("middlewares");
+    const middlewares = Container.get('middlewares');
     const pipelineInstance = PipeLine.create(middlewares);
-
-    Container.set("pipeline", pipelineInstance);
+    await pipelineInstance.execute({});
+    Container.set('pipeline', pipelineInstance);
 };
