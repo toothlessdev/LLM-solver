@@ -1,4 +1,5 @@
 import { Container } from 'typedi';
+import { PROMPT_TEMPLATE } from '../constants/index.js';
 
 export class AnswerGenerator {
     constructor() {
@@ -47,19 +48,10 @@ export class AnswerGenerator {
             messages: [
                 {
                     role: 'system',
-                    content: `a. 다음 제시되는 context 에 대한 질문에 대한 답변을 생성해주세요.
-                                 - context: ${relevantContext}
-                                 - 제시된 context 에 질문에 대한 내용이 없는경우, 외부 정보를 참고하여 답변을 생성해주세요.
-                              b. 답변에 대한 풀이과정과 교차검증을 수행해주세요.
-                              c. 해당 답변이 옳을 가능성은 얼마나 될지 예측해주세요.
-
-                              정답 : 
-                              풀이과정 : 
-                              교차검증 결과 : 
-                              해당 답변이 옳을 가능성 : (백분위 형태로 작성해주세요)%
-
-                              형식으로 답변을 작성해주세요.
-                    `,
+                    content: PROMPT_TEMPLATE.replace(
+                        '{context}',
+                        relevantContext
+                    ),
                 },
                 { role: 'user', content: question },
             ],
