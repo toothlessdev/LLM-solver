@@ -1,23 +1,30 @@
-import fs from "fs";
-import path from "path";
-import { Logger } from "../log/Logger.js";
+import fs from 'fs';
+import path from 'path';
+import { BaseMiddleware } from './BaseMiddleware.js';
 
 const __dirname = path.resolve();
 
-export class RetrieveAssetsMiddleware {
+class AssetRetriever {
+    static retrieveAssets(assetsDir) {
+        return fs
+            .readdirSync(assetsDir)
+            .filter((file) => path.extname(file).toLowerCase())
+            .map((file) => path.join(assetsDir, file));
+    }
+}
+
+export class RetrieveAssetsMiddleware extends BaseMiddleware {
     constructor() {
-        this.ASSETS_DIR = path.join(__dirname, "src", "assets");
+        super();
+        this.ASSETS_DIR = path.join(__dirname, 'src', 'assets');
     }
 
     async next(context, next) {
-        Logger.log("RetrieveAssetsMiddleware", "Retrieving assets ...");
+        this.log('Retrieving assets ...');
 
-        const assetsPath = fs
-            .readdirSync(this.ASSETS_DIR)
-            .filter((file) => path.extname(file).toLowerCase())
-            .map((file) => path.join(this.ASSETS_DIR, file));
+        const assetsPath = AssetRetriever.retrieveAssets(this.ASSETS_DIR);
 
-        Logger.log("RetrieveAssetsMiddleware", `Found ${assetsPath.length} assets`);
+        this.log(`Found ${assetsPath.length} assets`);
 
         context.assetsPath = assetsPath;
         await next();

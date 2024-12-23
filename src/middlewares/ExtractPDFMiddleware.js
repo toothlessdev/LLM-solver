@@ -1,69 +1,69 @@
-import fs from "fs";
-import path from "path";
-import PdfParse from "pdf-parse/lib/pdf-parse.js";
-import { Logger } from "../log/Logger.js";
+import { BaseMiddleware } from './BaseMiddleware.js';
+import CacheManager from '../utils/CacheManager.js';
+import PDFExtractor from '../utils/PDFExtractor.js';
 
-const __dirname = path.resolve();
-
-export class ExtractPDFMiddleware {
-    async createContextsDir() {
-        const contextsDir = path.join(__dirname, "src", "contexts");
-        if (!fs.existsSync(contextsDir)) fs.mkdirSync(contextsDir);
-        return contextsDir;
-    }
-
-    async extractTextsFromPdf(filePath) {
-        const buffer = fs.readFileSync(filePath);
-        const fileName = path.basename(filePath, path.extname(filePath));
-
-        const { text } = await PdfParse(buffer);
-        return { fileName, text };
-    }
-
-    async cacheExtractedTexts(contextsDir, fileName, extractedText) {
-        const txtPath = path.join(contextsDir, `${fileName}.txt`);
-        fs.writeFileSync(txtPath, extractedText, "utf-8");
-        return { fileName, text: extractedText };
-    }
-
-    async isCached(contextsDir, fileName) {
-        const txtPath = path.join(contextsDir, `${fileName}.txt`);
-        return fs.existsSync(txtPath);
-    }
-
-    async readCachedText(contextsDir, fileName) {
-        const txtPath = path.join(contextsDir, `${fileName}.txt`);
-        return fs.readFileSync(txtPath, "utf-8");
-    }
-
+export class ExtractPDFMiddleware extends BaseMiddleware {
     async next(context, next) {
         const { assetsPath } = context;
 
-        Logger.log("ExtractPDFMiddleware", "Creating Contexts Directory ...");
-        const contextsDir = await this.createContextsDir();
+        this.log('Creating Contexts Directory ...');
+        const contextsDir = await this.createContextsDirectory();
         context.contextsDir = contextsDir;
-        Logger.log("ExtractPDFMiddleware", "Contexts Directory Created at", contextsDir);
+        this.log('Contexts Directory Created at', contextsDir);
 
-        await assetsPath.forEach(async (assetPath) => {
-            const cached = await this.isCached(contextsDir, assetPath);
-            Logger.log("ExtractPDFMiddleware", `Asset ${assetPath} is ${cached ? "cached" : "not cached"}`);
-
-            if (!cached) {
-                Logger.log("ExtractPDFMiddleware", "Extracting Texts from PDF", assetPath);
-                const { fileName: pdfFileName, text: pdfText } = await this.extractTextsFromPdf(assetPath);
-                Logger.log("ExtractPDFMiddleware", "Texts Extracted");
-
-                Logger.log("ExtractPDFMiddleware", "Caching Extracted Texts ...");
-                const { fileName, _text } = await this.cacheExtractedTexts(contextsDir, pdfFileName, pdfText);
-                Logger.log("ExtractPDFMiddleware", "Extracted Texts Cached at", fileName);
-            } else {
-                Logger.log("ExtractPDFMiddleware", "Reading Cached Texts ...");
-                const _cachedText = await this.readCachedText(contextsDir, assetPath);
-                Logger.log("ExtractPDFMiddleware", "Cached Texts Read");
-            }
-        });
+        await this.processAssets(contextsDir, assetsPath);
 
         delete context.assetsPath;
         await next();
+    }
+
+    async createContextsDirectory() {
+        return await CacheManager.getInstance().createContextsDir();
+    }
+
+    async processAssets(contextsDir, assetsPath) {
+        for (const assetPath of assetsPath) {
+            await this.processAsset(contextsDir, assetPath);
+        }
+    }
+
+    async processAsset(contextsDir, assetPath) {
+        const cached = await this.isAssetCached(contextsDir, assetPath);
+        this.log(`Asset ${assetPath} is ${cached ? 'cached' : 'not cached'}`);
+
+        if (!cached) {
+            await this.extractAndCacheTexts(contextsDir, assetPath);
+        } else {
+            await this.readCachedTexts(contextsDir, assetPath);
+        }
+    }
+
+    async isAssetCached(contextsDir, assetPath) {
+        return await CacheManager.getInstance().isCached(
+            contextsDir,
+            assetPath
+        );
+    }
+
+    async extractAndCacheTexts(contextsDir, assetPath) {
+        this.log('Extracting Texts from PDF', assetPath);
+        const { fileName: pdfFileName, text: pdfText } =
+            await PDFExtractor.extractTextsFromPdf(assetPath);
+        this.log('Texts Extracted');
+
+        this.log('Caching Extracted Texts ...');
+        const { fileName } =
+            await CacheManager.getInstance().cacheExtractedTexts(
+                contextsDir,
+                pdfFileName,
+                pdfText
+            );
+        this.log('Extracted Texts Cached at', fileName);
+    }
+
+    async readCachedTexts(contextsDir, assetPath) {
+        this.log('Reading Cached Texts ...');
+        await CacheManager.getInstance().readCachedText(contextsDir, assetPath);
+        this.log('Cached Texts Read');
     }
 }

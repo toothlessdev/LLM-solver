@@ -1,8 +1,16 @@
-export class PipeLine {
-    constructor() {
-        this.middlewares = [];
-    }
+import { BaseMiddleware } from "../middlewares/BaseMiddleware.js";
 
+export class PipeLine {
+    constructor(middlewares) {
+        this.middlewares = middlewares;
+    }
+    /**
+     * @param {Array<BaseMiddleware>} middlewares
+     * @returns {PipeLine}
+     */
+    static create(middlewares) {
+        return new PipeLine(middlewares);
+    }
     use(middleware) {
         this.middlewares.push(middleware);
     }
